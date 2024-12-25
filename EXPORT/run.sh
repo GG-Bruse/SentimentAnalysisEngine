@@ -1,6 +1,6 @@
 set -ex
 
-. ./path.sh
+. ../path.sh
 . ./env.sh
 
 echo $ckpt_file

@@ -1,5 +1,6 @@
 # coding: UTF-8
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -109,9 +110,14 @@ def evaluate(model, data_loader, test=False):
     loss_total = 0
     predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
+    outputs_all = np.array([[]], dtype=np.float64).reshape(0, 2)
     with torch.no_grad():
         for texts, labels in data_loader:
             outputs = model(texts)
+            np_outputs = outputs.cpu().numpy()
+            # print("np_outputs:",np_outputs)
+            outputs_all = np.append(outputs_all, np_outputs, axis = 0)
+            # print('outputs_all:', outputs_all)
             loss = F.cross_entropy(outputs, labels)
             loss_total += loss
             labels = labels.data.cpu().numpy()
@@ -121,9 +127,16 @@ def evaluate(model, data_loader, test=False):
     acc = metrics.accuracy_score(labels_all, predict_all)
 
     if test:
+        col1 = [sub_array[0] for sub_array in outputs_all]
+        col2 = [sub_array[1] for sub_array in outputs_all]
+        outputs_all = np.array([col1, col2]).T
+        df = pd.DataFrame(outputs_all, columns=config_inf.class_list)
+        df.to_csv(config_inf.output_path, index=True)
+
         # 生成分类报告
         report = metrics.classification_report(labels_all, predict_all, target_names=config_inf.class_list, digits=4)
         # 生成混淆矩阵
         confusion = metrics.confusion_matrix(labels_all, predict_all)
         return acc, loss_total / len(data_loader), report, confusion
     return acc, loss_total / len(data_loader)
+

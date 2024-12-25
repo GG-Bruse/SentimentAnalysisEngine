@@ -10,6 +10,7 @@ class Config(object):
         self.test_path = './dataset/test.txt'                                  # 测试集
         self.class_list = ['Negative', 'Positive']                             # 类别名单
         self.save_path = './saved/' + str(int(time.time())) + '.ckpt'          # 模型训练结果
+        self.output_path = './saved/python_inference_result.csv'               # 推理训练数据的输出结果
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')   # 设备
 
         self.require_improvement = 1000                                 # 若超过 1000batch 效果还没提升, 则提前结束训练

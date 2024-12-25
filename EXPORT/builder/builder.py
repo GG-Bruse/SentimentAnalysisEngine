@@ -257,6 +257,8 @@ def build_engine(batch_sizes, workspace_size, sequence_lengths, config, weights_
 
     with trt.Builder(TRT_LOGGER) as builder, builder.create_network(explicit_batch_flag) as network, builder.create_builder_config() as builder_config:
         builder_config.max_workspace_size = workspace_size * (1024 * 1024)
+        if config.use_fp16:
+            builder_config.set_flag(trt.BuilderFlag.FP16)
 
         emb_layer = emb_layernorm(builder, network, config, weights_dict, builder_config, sequence_lengths, batch_sizes)
         embeddings = emb_layer.get_output(0)
@@ -267,7 +269,7 @@ def build_engine(batch_sizes, workspace_size, sequence_lengths, config, weights_
         squad_logits_out = squad_logits.get_output(0)
         network.mark_output(squad_logits_out)
         engine = builder.build_engine(network, builder_config)
-    return engine
+        return engine
 
 def main(args):
     config = BertConfig(args.config_file)
@@ -283,7 +285,7 @@ def main(args):
     with build_engine(batch_size, workspace_size, sequence_length, config, weights_dict) as engine:
         TRT_LOGGER.log(TRT_LOGGER.VERBOSE, "Serializing Engine...")
         serialized_engine = engine.serialize()
-        TRT_LOGGER.log(TRT_LOGGER.INFO, "Saving Engine to {:}".format(args.output))
+        TRT_LOGGER.log(TRT_LOGGER.INFO, "Saving Engine to {:}".format(args.output_path))
         with open(args.output_path, "wb") as fout:
             fout.write(serialized_engine)
         TRT_LOGGER.log(TRT_LOGGER.INFO, "Done.")
