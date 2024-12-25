@@ -7,4 +7,9 @@ echo $ckpt_file
 echo $model_conf_file
 echo $vocab_file
 
+# build engine
 python ./builder/builder.py --config_file ${model_conf_file} --output_path './output/model.engine' --ckpt_file ${ckpt_file}
+# engine inference
+python ./inference/inference.py --input_path './inference/test.txt' --engine_path './output/model.engine' --vocab_file ${vocab_file} --inference_count ${inference_count}
+# python inference and engine inference diff
+
