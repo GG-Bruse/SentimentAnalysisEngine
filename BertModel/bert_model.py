@@ -1,4 +1,5 @@
 from transformers import BertModel
+import torch
 import torch.nn as nn
 
 class Model(nn.Module):
@@ -16,4 +17,4 @@ class Model(nn.Module):
         attention_mask = input[2]
         all_output = self.bert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=segment_ids)
         output = self.fc(all_output[1])
-        return output
+        return torch.sigmoid(output)

@@ -6,6 +6,8 @@ import numpy as np
 import time
 from tqdm import tqdm
 from transformers import BertTokenizer
+import pandas as pd
+import os
 
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
 
@@ -45,7 +47,6 @@ class BertEngine(object):
             self.stream = cuda.Stream()
 
             # Allocate device memory for inputs.
-            print('Before initializing d_inputs')
             self.d_inputs = [cuda.mem_alloc(input_nbytes) for binding in range(3)]
             # Allocate output buffer by querying the size from the context. This may be different for different input shapes.
             self.h_output = cuda.pagelocked_empty(tuple(context.get_binding_shape(binding_idx_offset + 3)), dtype=np.float32)
@@ -91,12 +92,14 @@ def main(args):
         )
         return encode_dict
 
+    cost_time = 0
     infer_count = 0
     batch_count = 0
     batch_dic = {}
     input_ids_list = []
     segment_ids_list = []
     input_mask_list = []
+    outputs_all = np.array([[]], dtype=np.float64).reshape(0, 2)
     with open(args.input_path, 'r') as input_file, open('./inference/engine_result_' + str(args.inference_count) + '.csv', 'w') as output_file:
         for line in tqdm(input_file):
             if infer_count == args.inference_count:
@@ -110,15 +113,24 @@ def main(args):
             input_mask_list.append(feature['token_type_ids'])
             infer_count += 1
             batch_count += 1
-            if batch_count % batch_size == 0 and batch_count != 0:
+            if batch_count % batch_size == 0 and batch_count != 0 and batch_count == 5:
                 batch_dic['input_ids'] = np.array(input_ids_list, dtype = np.int32)
                 batch_dic['segment_ids'] = np.array(segment_ids_list, dtype = np.int32)
                 batch_dic['input_mask'] = np.array(input_mask_list, dtype = np.int32)
+                print('batch_dic', batch_dic)
 
                 infer_start = time.time()
                 result = inference_engine(batch_dic)
+                print('result',result)
+                print('shape', result.shape)
+                result = np.squeeze(result[0])
+
                 infer_end = time.time()
-                print("output:", result)
+                cost_time += (infer_end - infer_start)
+
+                outputs_all = np.append(outputs_all, result, axis = 0)
+                np.set_printoptions(threshold=np.inf)
+                print('outputs_all:', outputs_all)
 
                 batch_dic = {}
                 input_ids_list = []

@@ -66,7 +66,8 @@ def train(model, train_data_loader, dev_data_loader, test_data_loader):
             scheduler.step()
             if total_batch % 100 == 0:
                 true = labels.data.cpu()
-                predic = torch.max(outputs.data, 1)[1].cpu()  # 找到概率最大的类别作为预测类别
+                print(torch.max(outputs, 1))
+                predic = torch.max(outputs, 1)[1].cpu()  # 找到概率最大的类别作为预测类别
                 train_accuracy = metrics.accuracy_score(true, predic)
                 dev_acc, dev_loss = evaluate(model, dev_data_loader)
                 if dev_loss < dev_best_loss:  # 选取损失最小作为模型保存的结果
@@ -114,6 +115,8 @@ def evaluate(model, data_loader, test=False):
     with torch.no_grad():
         for texts, labels in data_loader:
             outputs = model(texts)
+            # print('outputs', outputs)
+            # print('outputs shape', outputs.shape)
             np_outputs = outputs.cpu().numpy()
             # print("np_outputs:",np_outputs)
             outputs_all = np.append(outputs_all, np_outputs, axis = 0)
