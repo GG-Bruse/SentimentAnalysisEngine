@@ -108,7 +108,7 @@ def emb_layernorm(builder, network, config, weights_dict, builder_config, sequen
 
 def attention_layer_opt(prefix, config, init_dict, network, input_tensor, imask):
     assert(len(input_tensor.shape) == 5)
-    B, S, hidden_size, _, _ = input_tensor.shape
+    _, _, hidden_size, _, _ = input_tensor.shape
     num_heads = config.num_attention_heads
     head_size = int(hidden_size / num_heads)
 
@@ -210,7 +210,7 @@ def transformer_layer_opt(prefix, config, init_dict, network, input_tensor, imas
     out_dense = network.add_fully_connected(intermediate_act, hidden_size, W_lout, B_lout)
     set_output_name(out_dense, prefix + "output_", "dense")
 
-    out_layer = skipln(prefix + "output_layernorm_", config, init_dict, network, out_dense.get_output(0), attention_ln, B_lout)
+    out_layer = skipln(prefix + "output_layernorm_", config, init_dict, network, out_dense.get_output(0), attention_ln, None)
     set_output_name(out_layer, prefix + "output_", "reshape")
 
     return out_layer
@@ -236,16 +236,17 @@ def squad_output(prefix, config, init_dict, network, input_tensor):
     p_b = init_dict["bert_pooler_dense_bias"]
     pool_output = network.add_fully_connected(input_tensor, hidden_size, p_w, p_b)
     pool_data = pool_output.get_output(0)
+
     tanh = network.add_activation(pool_data, trt.tensorrt.ActivationType.TANH)
     tanh_output = tanh.get_output(0)
+
     W_out = init_dict["output_weights"]
     B_out = init_dict["output_bias"]
-
     n_values = int(os.environ["output_numbers"])
     dense = network.add_fully_connected(tanh_output, n_values, W_out, B_out)
     dense_data = dense.get_output(0)
-    sigmoid = network.add_activation(dense_data, trt.tensorrt.ActivationType.SIGMOID)
 
+    sigmoid = network.add_activation(dense_data, trt.tensorrt.ActivationType.SIGMOID)
     set_output_name(sigmoid, prefix, 'sigmoid')
     return sigmoid 
 
@@ -273,7 +274,7 @@ def build_engine(batch_sizes, workspace_size, sequence_lengths, config, weights_
 
 def main(args):
     config = BertConfig(args.config_file)
-    batch_size = [5]
+    batch_size = [3]
     workspace_size = 10000
     sequence_length = [512]
 

@@ -10,10 +10,10 @@ class BertLoader:
          self.config = config
 
     def load_weight(self, model_path):
-        self.tensor_dict = torch.load(model_path, map_location='cpu', weights_only=True)
-        # self.tensor_dict = torch.load(model_path)
-        # for key in self.tensor_dict:
-        #    print(key)
+        # self.tensor_dict = torch.load(model_path, map_location='cpu', weights_only=True)
+        self.tensor_dict = torch.load(model_path)
+        for key in self.tensor_dict:
+           print(key)
         # embeddings
         self.weights_dict['bert_embeddings_word_embeddings'] = trt.Weights(self.tensor_dict['bert_model.embeddings.word_embeddings.weight'].cpu().numpy().flatten())
         self.weights_dict['bert_embeddings_position_embeddings'] = trt.Weights(self.tensor_dict['bert_model.embeddings.position_embeddings.weight'].cpu().numpy().flatten())
@@ -93,8 +93,8 @@ class BertLoader:
 
 
 if __name__ == "__main__":
-    config = BertConfig('/data/project/bjy/emotion-classification-engine/EXPORT/model/config.json')
+    config = BertConfig('/data/project/bjy/EmotionClassificationEngine/EXPORT/model/config.json')
     loader = BertLoader(config)
-    loader.load_weight('/data/project/bjy/emotion-classification-engine/EXPORT/model/1733990412.ckpt')
+    loader.load_weight('/data/project/bjy/EmotionClassificationEngine/EXPORT/model/1735532652.ckpt')
     loader.load_weight_bias_dict()
 

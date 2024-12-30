@@ -36,6 +36,7 @@ class BertEngine(object):
                 raise RuntimeError("Could not find any profile that can run batch size {}.".format(args.batch_size))
 
             context.set_optimization_profile_async(selected_profile, cuda.Stream().handle)
+            print("selected_profile", selected_profile)
 
             binding_idx_offset = selected_profile * num_binding_per_profile # 0
             input_shape = (self.batch_size, self.max_seq_length)
@@ -58,6 +59,7 @@ class BertEngine(object):
                 cuda.memcpy_htod_async(self.d_inputs[1], feature['segment_ids'], self.stream)
                 cuda.memcpy_htod_async(self.d_inputs[2], feature['input_mask'], self.stream)
                 context.execute_async_v2(bindings=[0 for i in range(binding_idx_offset)] + [int(d_inp) for d_inp in self.d_inputs] + [int(self.d_output)], stream_handle=self.stream.handle)
+                self.stream.synchronize()
                 cuda.memcpy_dtoh_async(self.h_output, self.d_output, self.stream)
                 self.stream.synchronize()
 
@@ -72,7 +74,7 @@ class BertEngine(object):
 
 
 def main(args):
-    batch_size = 5
+    batch_size = 3
     max_seq_length = 512
 
     bert_engine = BertEngine(args.engine_path, batch_size, max_seq_length)
@@ -96,43 +98,56 @@ def main(args):
     infer_count = 0
     batch_count = 0
     batch_dic = {}
+    texts_list = []
+    labels_list = []
     input_ids_list = []
     segment_ids_list = []
     input_mask_list = []
-    outputs_all = np.array([[]], dtype=np.float64).reshape(0, 2)
-    with open(args.input_path, 'r') as input_file, open('./inference/engine_result_' + str(args.inference_count) + '.csv', 'w') as output_file:
+
+    
+    predict_all = np.array([], dtype=int)
+    labels_all = np.array([], dtype=int)
+    texts_all = np.array([], dtype=str)
+    input_ids_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
+    attention_mask_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
+    segment_ids_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
+    outputs_all = np.array([[]], dtype=np.float64).reshape(0, int(os.environ["output_numbers"]))
+
+    with open(args.input_path, 'r') as input_file, open('./inference/engine_result_' + str(args.inference_count) + '.jsonl', 'w') as output_file:
         for line in tqdm(input_file):
             if infer_count == args.inference_count:
                 break
 
             line = line.strip()
             content, label = line.split('\t')
+            texts_list.append(content)
+            labels_list.append(label)
             feature = text2feature(content)
             input_ids_list.append(feature['input_ids'])
             segment_ids_list.append(feature['attention_mask'])
             input_mask_list.append(feature['token_type_ids'])
             infer_count += 1
             batch_count += 1
-            if batch_count % batch_size == 0 and batch_count != 0 and batch_count == 5:
+
+            if batch_count % batch_size == 0 and batch_count != 0:
                 batch_dic['input_ids'] = np.array(input_ids_list, dtype = np.int32)
                 batch_dic['segment_ids'] = np.array(segment_ids_list, dtype = np.int32)
                 batch_dic['input_mask'] = np.array(input_mask_list, dtype = np.int32)
-                print('batch_dic', batch_dic)
+                print("input:", batch_dic['input_ids'])
 
                 infer_start = time.time()
-                result = inference_engine(batch_dic)
-                print('result',result)
-                print('shape', result.shape)
-                result = np.squeeze(result[0])
-
+                result = np.squeeze(inference_engine(batch_dic)[0])
+                print("result shape:", result.shape)
+                print("result", result)
                 infer_end = time.time()
                 cost_time += (infer_end - infer_start)
 
                 outputs_all = np.append(outputs_all, result, axis = 0)
                 np.set_printoptions(threshold=np.inf)
-                print('outputs_all:', outputs_all)
 
                 batch_dic = {}
+                texts_list = []
+                labels_list = []
                 input_ids_list = []
                 segment_ids_list = []
                 input_mask_list = []
