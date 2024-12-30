@@ -28,6 +28,5 @@ if __name__ == '__main__':
 
     # train
     bert_model = Model(config_inf.bert_path, config_inf.hidden_size, config_inf.num_classes).to(config_inf.device)
-    train(bert_model, train_data_loader, dev_data_loader, test_data_loader)
-    # test(bert_model, test_data_loader, "./saved/1733990412.ckpt")
-
+    # train(bert_model, train_data_loader, dev_data_loader, test_data_loader)
+    test(bert_model, test_data_loader, "./saved/1735532652.ckpt")

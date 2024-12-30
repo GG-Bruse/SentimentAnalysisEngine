@@ -21,21 +21,21 @@
 
 
 
-Test Loss: 0.053,  Test Acc: 98.00%
+Test Loss:  0.33,  Test Acc: 98.17%
 Precision, Recall and F1-Score...
               precision    recall  f1-score   support
 
-    Negative     0.9664    0.9951    0.9805      5063
-    Positive     0.9948    0.9646    0.9794      4937
+    Negative     0.9653    0.9998    0.9822      5063
+    Positive     0.9998    0.9631    0.9811      4937
 
-    accuracy                         0.9800     10000
-   macro avg     0.9806    0.9798    0.9800     10000
-weighted avg     0.9804    0.9800    0.9800     10000
+    accuracy                         0.9817     10000
+   macro avg     0.9825    0.9815    0.9817     10000
+weighted avg     0.9823    0.9817    0.9817     10000
 
 Confusion Matrix...
-[[5038   25]
- [ 175 4762]]
-Time usage: 295.2111532688141
+[[5062    1]
+ [ 182 4755]]
+Time usage: 120.27599000930786
 
 
 

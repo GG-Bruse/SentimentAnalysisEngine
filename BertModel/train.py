@@ -6,9 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from transformers import get_linear_schedule_with_warmup
-
 from sklearn import metrics
 import time
+import json
 import config
 
 import warnings
@@ -66,7 +66,6 @@ def train(model, train_data_loader, dev_data_loader, test_data_loader):
             scheduler.step()
             if total_batch % 100 == 0:
                 true = labels.data.cpu()
-                print(torch.max(outputs, 1))
                 predic = torch.max(outputs, 1)[1].cpu()  # 找到概率最大的类别作为预测类别
                 train_accuracy = metrics.accuracy_score(true, predic)
                 dev_acc, dev_loss = evaluate(model, dev_data_loader)
@@ -105,22 +104,29 @@ def test(model, test_data_loader, path):
     print("Time usage:", end_time - start_time)
 
 
+def convert_numpy_int_to_python_int(lst):
+    return [int(x) if isinstance(x, np.int64) else x for x in lst]
+
 def evaluate(model, data_loader, test=False):
     config_inf = config.Config()
     model.eval()
     loss_total = 0
     predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
-    outputs_all = np.array([[]], dtype=np.float64).reshape(0, 2)
+    texts_all = np.array([], dtype=str)
+    input_ids_all = np.array([[]], dtype=int).reshape(0, config_inf.max_sequence_length)
+    attention_mask_all = np.array([[]], dtype=int).reshape(0, config_inf.max_sequence_length)
+    segment_ids_all = np.array([[]], dtype=int).reshape(0, config_inf.max_sequence_length)
+    outputs_all = np.array([[]], dtype=np.float64).reshape(0, config_inf.num_classes)
     with torch.no_grad():
-        for texts, labels in data_loader:
-            outputs = model(texts)
-            # print('outputs', outputs)
-            # print('outputs shape', outputs.shape)
-            np_outputs = outputs.cpu().numpy()
-            # print("np_outputs:",np_outputs)
-            outputs_all = np.append(outputs_all, np_outputs, axis = 0)
-            # print('outputs_all:', outputs_all)
+        for inputs, labels, texts in data_loader:
+            texts_all = np.append(texts_all, texts)
+            input_ids_all = np.append(input_ids_all, inputs[0].cpu().numpy(), axis = 0)
+            attention_mask_all = np.append(attention_mask_all, inputs[1].cpu().numpy(), axis = 0)
+            segment_ids_all = np.append(segment_ids_all, inputs[2].cpu().numpy(), axis = 0)
+            outputs = model(inputs)
+            outputs_all = np.append(outputs_all, outputs.cpu().numpy(), axis = 0)
+
             loss = F.cross_entropy(outputs, labels)
             loss_total += loss
             labels = labels.data.cpu().numpy()
@@ -130,11 +136,32 @@ def evaluate(model, data_loader, test=False):
     acc = metrics.accuracy_score(labels_all, predict_all)
 
     if test:
-        col1 = [sub_array[0] for sub_array in outputs_all]
-        col2 = [sub_array[1] for sub_array in outputs_all]
-        outputs_all = np.array([col1, col2]).T
-        df = pd.DataFrame(outputs_all, columns=config_inf.class_list)
-        df.to_csv(config_inf.output_path, index=True)
+        # print("input_ids_all:", input_ids_all.shape)
+        # print("attention_mask_all:", attention_mask_all.shape)
+        # print("segment_ids:", segment_ids_all.shape)
+        # print("outputs_all shape:", outputs_all.shape)
+        # print("labels_all shape:", labels_all.shape)
+        # print("predict_all shape:", predict_all.shape)
+        with open(config_inf.output_path, 'w', encoding='utf-8') as file:
+            index = 0
+            for i in range(len(input_ids_all)):
+                input_ids_list = convert_numpy_int_to_python_int(input_ids_all[i].tolist())
+                attention_mask_list = convert_numpy_int_to_python_int(attention_mask_all[i].tolist())
+                segment_ids_list = convert_numpy_int_to_python_int(segment_ids_all[i].tolist())
+                data = {
+                    'index':index,
+                    'text': texts_all[i],
+                    'input_ids':input_ids_list,
+                    'attention_mask':attention_mask_list,
+                    'segment_ids':segment_ids_list,
+                    'target':int(labels_all[i]), 'predict':int(predict_all[i])
+                }
+                outputs = outputs_all[i]
+                for j in range(config_inf.num_classes):
+                    data[config_inf.class_list[j]] = outputs[j]
+                json.dump(data, file, ensure_ascii=False)
+                file.write('\n')
+                index += 1
 
         # 生成分类报告
         report = metrics.classification_report(labels_all, predict_all, target_names=config_inf.class_list, digits=4)

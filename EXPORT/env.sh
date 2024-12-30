@@ -1,4 +1,4 @@
-export ckpt_file=./model/1733990412.ckpt
+export ckpt_file=./model/1735532652.ckpt
 export model_conf_file=./model/config.json
 export vocab_file=./model/vocab.txt
 export output_numbers=2
