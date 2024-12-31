@@ -19,6 +19,5 @@ else
 fi
 python ./inference/inference.py --input_path './inference/test.txt' --engine_path './output/model.engine' --vocab_file ${vocab_file} --inference_count ${inference_count}
 
-
 # python inference and engine inference diff
 

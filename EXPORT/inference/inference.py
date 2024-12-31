@@ -8,6 +8,7 @@ from tqdm import tqdm
 from transformers import BertTokenizer
 import pandas as pd
 import os
+import json
 
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
 
@@ -73,7 +74,8 @@ class BertEngine(object):
         return inference
 
 
-
+def convert_numpy_int_to_python_int(lst):
+    return [int(x) if isinstance(x, np.int64) else x for x in lst]
 
 
 def main(args):
@@ -101,19 +103,16 @@ def main(args):
     infer_count = 0
     batch_count = 0
     batch_dic = {}
-    texts_list = []
-    labels_list = []
     input_ids_list = []
     segment_ids_list = []
     input_mask_list = []
 
-    
-    predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
     texts_all = np.array([], dtype=str)
+    predict_all = np.array([], dtype=int)
     input_ids_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
-    attention_mask_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
     segment_ids_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
+    attention_mask_all = np.array([[]], dtype=int).reshape(0, max_seq_length)
     outputs_all = np.array([[]], dtype=np.float64).reshape(0, int(os.environ["output_numbers"]))
 
     with open(args.input_path, 'r') as input_file, open('./inference/engine_result_' + str(args.inference_count) + '.jsonl', 'w') as output_file:
@@ -123,8 +122,9 @@ def main(args):
 
             line = line.strip()
             content, label = line.split('\t')
-            texts_list.append(content)
-            labels_list.append(label)
+            texts_all = np.append(texts_all, content)
+            labels_all = np.append(labels_all, label)
+
             feature = text2feature(content)
             input_ids_list.append(feature['input_ids'])
             input_mask_list.append(feature['attention_mask'])
@@ -136,24 +136,44 @@ def main(args):
                 batch_dic['input_ids'] = np.array(input_ids_list, dtype = np.int32)
                 batch_dic['segment_ids'] = np.array(segment_ids_list, dtype = np.int32)
                 batch_dic['input_mask'] = np.array(input_mask_list, dtype = np.int32)
-                # print("batch_dic:", batch_dic)
+                input_ids_all = np.append(input_ids_all, batch_dic['input_ids'], axis = 0)
+                segment_ids_all = np.append(segment_ids_all, batch_dic['segment_ids'], axis = 0)
+                attention_mask_all = np.append(attention_mask_all, batch_dic['input_mask'], axis = 0)
 
                 infer_start = time.time()
                 result = np.squeeze(inference_engine(batch_dic)[0])
-                # print("result shape:", np.squeeze(inference_engine(batch_dic)).shape)
-                print("result", np.squeeze(inference_engine(batch_dic)[0]))
+                # print("result", np.squeeze(inference_engine(batch_dic)[0]))
                 infer_end = time.time()
                 cost_time += (infer_end - infer_start)
 
                 outputs_all = np.append(outputs_all, result, axis = 0)
-                np.set_printoptions(threshold=np.inf)
+                predict_all = np.append(predict_all, np.argmax(result, axis = 1), axis = 0)
 
                 batch_dic = {}
-                texts_list = []
-                labels_list = []
                 input_ids_list = []
                 segment_ids_list = []
                 input_mask_list = []
+        
+        index = 0
+        for i in range(len(input_ids_all)):
+            input_ids_list = convert_numpy_int_to_python_int(input_ids_all[i].tolist())
+            attention_mask_list = convert_numpy_int_to_python_int(attention_mask_all[i].tolist())
+            segment_ids_list = convert_numpy_int_to_python_int(segment_ids_all[i].tolist())
+            data = {
+                'index':index,
+                'text': texts_all[i],
+                'input_ids':input_ids_list,
+                'attention_mask':attention_mask_list,
+                'segment_ids':segment_ids_list,
+                'target':int(labels_all[i]), 'predict':int(predict_all[i])
+            }
+            outputs = outputs_all[i]
+            output_classes = os.environ["output_classes"].split(',')
+            for j in range(int(os.environ["output_numbers"])):
+                data[output_classes[j]] = outputs[j]
+            json.dump(data, output_file, ensure_ascii=False)
+            output_file.write('\n')
+            index += 1
 
 
 
