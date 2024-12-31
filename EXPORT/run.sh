@@ -20,4 +20,4 @@ fi
 python ./inference/inference.py --input_path './inference/test.txt' --engine_path './output/model.engine' --vocab_file ${vocab_file} --inference_count ${inference_count}
 
 # python inference and engine inference diff
-
+python ./inference/difference.py --python_inference_path './model/python_inference_result.jsonl' --engine_inference_path './inference/engine_result_'${inference_count}'.jsonl' --diff_count ${inference_count}
