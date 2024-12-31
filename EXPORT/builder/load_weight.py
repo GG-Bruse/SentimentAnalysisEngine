@@ -10,8 +10,8 @@ class BertLoader:
          self.config = config
 
     def load_weight(self, model_path):
-        # self.tensor_dict = torch.load(model_path, map_location='cpu', weights_only=True)
-        self.tensor_dict = torch.load(model_path)
+        self.tensor_dict = torch.load(model_path, map_location='cpu', weights_only=True)
+        # self.tensor_dict = torch.load(model_path)
         for key in self.tensor_dict:
            print(key)
         # embeddings

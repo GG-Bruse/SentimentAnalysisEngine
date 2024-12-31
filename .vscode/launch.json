@@ -1,0 +1,64 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "export_build",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/data/project/bjy/miniconda3/envs/bert/bin/python",
+            "cwd": "${workspaceFolder}/EXPORT",
+            "program": "/data/project/bjy/EmotionClassificationEngine/EXPORT/builder/builder.py",
+            "env": {
+                "LD_LIBRARY_PATH": "/usr/local/cuda-11.8/lib64/:/data3/a100_project/TensorRT-8.5.2.2/lib/:/data3/songxin/cudnn-linux-x86_64-8.6.0.163_cuda11-archive/lib/:${LD_LIBRARY_PATH}",
+                "PATH": "/data3/a100_project/TensorRT-8.5.2.2/bin/:/usr/local/cuda-11.8/bin/:$PATH",
+                "ckpt_file": "./model/1735532652.ckpt",
+                "model_conf_file": "./model/config.json",
+                "vocab_file": "./model/vocab.txt",
+                "output_numbers": "2",
+                "inference_file": "./model/python_inference_result.csv",
+                "inference_count": "10"
+            },
+            "console": "integratedTerminal",
+            "args": [
+                "--config_file",
+                "./model/config.json",
+                "--output_path",
+                "./output/model.engine",
+                "--ckpt_file",
+                "./model/1735532652.ckpt",
+            ]
+        },
+        {
+            "name": "export_inference",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/data/project/bjy/miniconda3/envs/bert/bin/python",
+            "cwd": "${workspaceFolder}/EXPORT",
+            "program": "/data/project/bjy/EmotionClassificationEngine/EXPORT/inference/inference.py",
+            "env": {
+                "LD_LIBRARY_PATH": "/usr/local/cuda-11.8/lib64/:/data3/a100_project/TensorRT-8.5.2.2/lib/:/data3/songxin/cudnn-linux-x86_64-8.6.0.163_cuda11-archive/lib/:${LD_LIBRARY_PATH}",
+                "PATH": "/data3/a100_project/TensorRT-8.5.2.2/bin/:/usr/local/cuda-11.8/bin/:$PATH",
+                "ckpt_file": "./model/1735532652.ckpt",
+                "model_conf_file": "./model/config.json",
+                "vocab_file": "./model/vocab.txt",
+                "output_numbers": "2",
+                "inference_file": "./model/python_inference_result.csv",
+                "inference_count": "10"
+            },
+            "console": "integratedTerminal",
+            "args": [
+                "--input_path",
+                "./inference/test.txt",
+                "--engine_path",
+                "./output/model.engine",
+                "--vocab_file",
+                "./model/vocab.txt",
+                "--inference_count",
+                "10"
+            ]
+        }
+    ]
+}

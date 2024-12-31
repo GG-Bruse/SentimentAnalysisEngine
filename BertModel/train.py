@@ -122,8 +122,8 @@ def evaluate(model, data_loader, test=False):
         for inputs, labels, texts in data_loader:
             texts_all = np.append(texts_all, texts)
             input_ids_all = np.append(input_ids_all, inputs[0].cpu().numpy(), axis = 0)
-            attention_mask_all = np.append(attention_mask_all, inputs[1].cpu().numpy(), axis = 0)
-            segment_ids_all = np.append(segment_ids_all, inputs[2].cpu().numpy(), axis = 0)
+            segment_ids_all = np.append(segment_ids_all, inputs[1].cpu().numpy(), axis = 0)
+            attention_mask_all = np.append(attention_mask_all, inputs[2].cpu().numpy(), axis = 0)
             outputs = model(inputs)
             outputs_all = np.append(outputs_all, outputs.cpu().numpy(), axis = 0)
 

@@ -177,7 +177,7 @@ def transformer_layer_opt(prefix, config, init_dict, network, input_tensor, imas
     B_aout = init_dict[prefix + B_AOUT]
     W_aout = init_dict[prefix + W_AOUT]
     attention_out_fc = network.add_fully_connected(attention_heads, hidden_size, W_aout, B_aout)
-    skiplayer = skipln(prefix + "attention_output_layernorm_",config, init_dict, network, attention_out_fc.get_output(0), input_tensor, B_aout)
+    skiplayer = skipln(prefix + "attention_output_layernorm_",config, init_dict, network, attention_out_fc.get_output(0), input_tensor, None)
     attention_ln = skiplayer.get_output(0)
      # FC1 + GELU
     B_mid = init_dict[prefix + B_MID]
@@ -268,13 +268,14 @@ def build_engine(batch_sizes, workspace_size, sequence_lengths, config, weights_
         bert_out = bert_model(config, weights_dict, network, embeddings, mask_idx)
         squad_logits = squad_output("cls_", config, weights_dict, network, bert_out)
         squad_logits_out = squad_logits.get_output(0)
+        squad_logits_out.name = "squad_logits_out"
         network.mark_output(squad_logits_out)
         engine = builder.build_engine(network, builder_config)
         return engine
 
 def main(args):
     config = BertConfig(args.config_file)
-    batch_size = [3]
+    batch_size = [5]
     workspace_size = 10000
     sequence_length = [512]
 
