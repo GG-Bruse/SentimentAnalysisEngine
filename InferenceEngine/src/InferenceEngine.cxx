@@ -14,7 +14,23 @@ namespace baojiayi
 
     void InferenceEngine::AddCoreProcessor(const std::string& modelName, const std::string& configPath)
     {
-        
+        dictionary* dict = iniparser_load(const_cast<char*>(configPath.c_str()));
+        if(nullptr == dict) {
+            LOG(ERROR) << "Unable open model:" << modelName << " config file" << std::endl;
+            exit(1);
+        }
+
+        std::vector<CoreProcessor*> cores;
+        int modelNumber = iniparser_getnsec(dict);
+        for(int index = 0; index < modelNumber; ++index)
+        {
+            std::string secName = iniparser_getsecname(dict, index);
+            CoreProcessor* coreProcessor = new CoreProcessor;
+            if(coreProcessor->Init(dict, secName)) 
+                cores.push_back(coreProcessor);
+        }
+        iniparser_freedict(dict);
+        _allCores[modelName] = cores;
     }
 
     void InferenceEngine::Handle(std::string text)

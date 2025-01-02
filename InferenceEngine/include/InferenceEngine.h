@@ -2,10 +2,13 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <mutex>
 #include <thread>
 #include <boost/lockfree/queue.hpp>
+#include "../include/iniparser.h"
 #include "../include/CoreProcessor.h"
+#include "../include/log.h"
 
 namespace baojiayi
 {
@@ -13,7 +16,7 @@ namespace baojiayi
     {
     public:
         static InferenceEngine* GetInstance();
-        static void AddCoreProcessor(const std::string& modelName, const std::string& configPath);
+        void AddCoreProcessor(const std::string& modelName, const std::string& configPath);
 
     public:
         void Handle(std::string text);
@@ -24,7 +27,7 @@ namespace baojiayi
         InferenceEngine& operator=(const InferenceEngine&) = delete;
     private:
         boost::lockfree::queue<std::string*> _queue; 
-        std::vector<CoreProcessor*>  _allCores;
+        std::unordered_map<std::string, std::vector<CoreProcessor*>>  _allCores;
 
     private:
         static InferenceEngine* _instance;
