@@ -1,4 +1,4 @@
-#include "../include/log.h"
+#include "../include/Log.h"
 
 namespace baojiayi
 {
@@ -10,9 +10,9 @@ namespace baojiayi
         std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&now_c));
 
         std::ostringstream oss;
-        oss << "[" + level + "]";
-        oss << "[" + fileName + "-" + std::to_string(lineNum) + "]";
-        oss << "[" + std::string(timeStr) + "]";
+        oss << "[" << level << "]";
+        oss << "[" << fileName << "-" << std::to_string(lineNum) << "]";
+        oss << "[" << std::string(timeStr) << "]";
         std::string message = oss.str();
 
         std::cout << message; // 存入缓冲区，不刷新待填充报错信息

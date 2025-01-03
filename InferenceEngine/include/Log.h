@@ -9,7 +9,6 @@
 
 namespace baojiayi
 {
-    #define LOG(level) Log(#level, __FILE__, __LINE__)
     //日志级别
     enum {
         DEBUG, NORMAL,
@@ -17,4 +16,6 @@ namespace baojiayi
         FATAL
     };
 	std::ostream& Log(const std::string& level, const std::string& fileName, int lineNum);
+
+    #define LOG(level) Log(#level, __FILE__, __LINE__)
 }

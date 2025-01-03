@@ -8,7 +8,7 @@
 #include <boost/lockfree/queue.hpp>
 #include "../include/iniparser.h"
 #include "../include/CoreProcessor.h"
-#include "../include/log.h"
+#include "../include/Log.h"
 
 namespace baojiayi
 {
@@ -19,14 +19,15 @@ namespace baojiayi
         void AddCoreProcessor(const std::string& modelName, const std::string& configPath);
 
     public:
-        void Handle(std::string text);
+        void Handle(const std::string& text);
+        void GetResult();
 
     private:
         InferenceEngine() {}
         InferenceEngine(const InferenceEngine&) = delete;
         InferenceEngine& operator=(const InferenceEngine&) = delete;
     private:
-        boost::lockfree::queue<std::string*> _queue; 
+        boost::lockfree::queue<std::string*>* _queue; 
         std::unordered_map<std::string, std::vector<CoreProcessor*>>  _allCores;
 
     private:

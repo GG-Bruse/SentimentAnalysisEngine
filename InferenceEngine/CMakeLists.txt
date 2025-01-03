@@ -25,6 +25,8 @@ include_directories(/data3/a100_project/TensorRT-8.5.2.2/include/)
 
 set(LIBS ${LIBS} -lpthread -liniparser -lnvinfer_plugin -lnvinfer -lutf8proc -licuuc -licuio -licudata -licui18n)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g")
+
 add_library(emotion_classification_engine SHARED ${SOURCE})
 set_target_properties(emotion_classification_engine PROPERTIES
     COMPILE_FLAGS "-Wno-deprecated-declarations"

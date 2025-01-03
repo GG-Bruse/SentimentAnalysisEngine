@@ -25,7 +25,7 @@ namespace baojiayi
         for(int index = 0; index < modelNumber; ++index)
         {
             std::string secName = iniparser_getsecname(dict, index);
-            CoreProcessor* coreProcessor = new CoreProcessor;
+            CoreProcessor* coreProcessor = new CoreProcessor();
             if(coreProcessor->Init(dict, secName)) 
                 cores.push_back(coreProcessor);
         }
@@ -33,7 +33,12 @@ namespace baojiayi
         _allCores[modelName] = cores;
     }
 
-    void InferenceEngine::Handle(std::string text)
+    void InferenceEngine::Handle(const std::string& text)
+    {
+        LOG(NORMAL) << "input text : " << text << std::endl;
+    }
+
+    void InferenceEngine::GetResult()
     {
 
     }
