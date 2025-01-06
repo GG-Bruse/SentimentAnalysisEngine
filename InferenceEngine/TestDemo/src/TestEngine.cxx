@@ -15,6 +15,7 @@ string splitFirstTab(const string& str) {
 int main()
 {
     InferenceEngine*  inferenceEngine = InferenceEngine::GetInstance();
+    inferenceEngine->Init(3);
     inferenceEngine->AddCoreProcessor("emotion", "/data/project/bjy/EmotionClassificationEngine/InferenceEngine/TestDemo/models/ModelInfo.conf");
 
     ifstream file("/data/project/bjy/EmotionClassificationEngine/InferenceEngine/TestDemo/models/test.txt");
@@ -27,9 +28,9 @@ int main()
     while(getline(file, line))
     {
         string input = splitFirstTab(line);
-        inferenceEngine->Handle(input);
+        CallBack* callBack = new CallBack;
+        inferenceEngine->Handle(input, "emotion", callBack);
     }
-    
-
+    inferenceEngine->Handle("null", "emotion", nullptr, true); 
     return 0;
 }

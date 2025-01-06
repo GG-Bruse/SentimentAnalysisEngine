@@ -12,6 +12,14 @@ namespace baojiayi
         return _instance;
     }
 
+    void InferenceEngine::Init(const size_t threadNumber)
+    {
+        _queue = new boost::lockfree::queue<InferenceRequest*>(1024 * 3);
+        _threadWorks.resize(threadNumber);
+        for(size_t index = 0; index < threadNumber; ++index)
+            _threadWorks[index] = new std::thread(&InferenceEngine::ThreadWorkFunction, this);
+    }
+
     void InferenceEngine::AddCoreProcessor(const std::string& modelName, const std::string& configPath)
     {
         dictionary* dict = iniparser_load(const_cast<char*>(configPath.c_str()));
@@ -33,9 +41,36 @@ namespace baojiayi
         _allCores[modelName] = cores;
     }
 
-    void InferenceEngine::Handle(const std::string& text)
+    void InferenceEngine::Handle(const std::string& text, const std::string model, CallBack* callBack, bool over)
     {
-        LOG(NORMAL) << "input text : " << text << std::endl;
+        // LOG(DEBUG) << "input text : " << text << std::endl;
+        json* request = new json();
+        (*request)["text"] = text;
+        
+        for(int index = 0; index < _allCores[model].size(); ++index)
+        {
+            InferenceRequest* inferenceRequest = new InferenceRequest;
+            inferenceRequest->_request = request;
+            inferenceRequest->_coreProcessor = _allCores[model][index];
+            inferenceRequest->_callBack = callBack;
+            inferenceRequest->_over = over;
+            while(_queue->push(inferenceRequest) == false) {
+                LOG(NORMAL) << "InferenceEngine queue is full, retrying..." << std::endl;
+            }
+        }
+    }
+
+    void InferenceEngine::ThreadWorkFunction()
+    {
+        while(true)
+        {
+            InferenceRequest* request = nullptr; 
+            while(false == _queue->pop(request)) {
+                // LOG(DEBUG) << "InferenceEngine queue is empty, retrying..." << std::endl;
+            }
+            if(request->_over) break;
+            request->_coreProcessor->Handle(request);
+        }
     }
 
     void InferenceEngine::GetResult()

@@ -16,10 +16,12 @@ namespace baojiayi
     {
     public:
         static InferenceEngine* GetInstance();
+        void Init(const size_t threadNumber);
         void AddCoreProcessor(const std::string& modelName, const std::string& configPath);
 
     public:
-        void Handle(const std::string& text);
+        void Handle(const std::string& text, const std::string model, CallBack* callBack, bool over = false);
+        void ThreadWorkFunction();
         void GetResult();
 
     private:
@@ -27,8 +29,9 @@ namespace baojiayi
         InferenceEngine(const InferenceEngine&) = delete;
         InferenceEngine& operator=(const InferenceEngine&) = delete;
     private:
-        boost::lockfree::queue<std::string*>* _queue; 
+        boost::lockfree::queue<InferenceRequest*>* _queue; 
         std::unordered_map<std::string, std::vector<CoreProcessor*>>  _allCores;
+        std::vector<std::thread*> _threadWorks; 
 
     private:
         static InferenceEngine* _instance;

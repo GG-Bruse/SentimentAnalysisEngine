@@ -6,16 +6,28 @@
 #include <thread>
 #include <boost/lockfree/queue.hpp>
 #include "../include/iniparser.h"
+#include "../include/json.hpp"
 #include "../include/Log.h"
+#include "../include/CallBack.h"
 
 #include <cuda_runtime_api.h>
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
 
 using namespace nvinfer1;
+using json = nlohmann::json;
 
 namespace baojiayi
 {
+    class CoreProcessor;
+    struct InferenceRequest
+    {
+        json* _request;
+        CoreProcessor* _coreProcessor;
+        CallBack* _callBack;
+        bool _over = false;
+    };
+
     class CoreWorker
     {
     public:
@@ -55,6 +67,7 @@ namespace baojiayi
     public:
         CoreProcessor();
         bool Init(dictionary* dict, const std::string& secName);
+        void Handle(InferenceRequest* request);
         
     private:
         boost::lockfree::queue<std::string*>* _fixed_length_queue; // TODO

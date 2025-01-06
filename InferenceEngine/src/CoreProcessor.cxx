@@ -158,10 +158,7 @@ namespace baojiayi
 
 
     /*****************************************************************************************************************************************/
-    CoreProcessor::CoreProcessor()
-    {
-
-    }
+    CoreProcessor::CoreProcessor() {}
 
     bool CoreProcessor::Init(dictionary* dict, const std::string& secName)
     {
@@ -176,5 +173,13 @@ namespace baojiayi
             exit(1);
         }
         return true;
+    }
+    static int count = 0;
+    void CoreProcessor::Handle(InferenceRequest* request)
+    {
+        std::string text = (*(request->_request))["text"];
+        ++count;
+        LOG(DEBUG) << "count:" << count << std::endl;
+        LOG(NORMAL) << text << std::endl;
     }
 }
