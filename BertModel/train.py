@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from transformers import get_linear_schedule_with_warmup
+import torchmetrics
 from sklearn import metrics
 import time
 import json
@@ -33,7 +34,7 @@ def init_network(model, method='xavier', exclude='embedding', seed=123):  # 选�
                 pass
 
 
-def train(model, train_data_loader, dev_data_loader, test_data_loader):
+def train(model, train_data_loader, dev_data_loader):
     config_inf = config.Config()
     model.train()  # 设置为训练模式
 
@@ -49,6 +50,8 @@ def train(model, train_data_loader, dev_data_loader, test_data_loader):
     num_warmup_steps = int(len(train_data_loader) * config_inf.num_epochs * 0.05)
     num_training_steps = len(train_data_loader) * config_inf.num_epochs
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps)
+    # 损失函数
+    criterion = nn.BCEWithLogitsLoss()
 
     total_batch = 0  # 记录进行到多少 batch
     dev_best_loss = float('inf')  # 保存验证集上出现过的最小损失值
@@ -57,17 +60,21 @@ def train(model, train_data_loader, dev_data_loader, test_data_loader):
 
     for epoch in range(config_inf.num_epochs):
         print('Epoch [{}/{}]'.format(epoch + 1, config_inf.num_epochs))
-        for i, (trains, labels) in enumerate(train_data_loader):
+        for i, (trains, labels, texts) in enumerate(train_data_loader):
             outputs = model(trains)
             model.zero_grad()  # 模型之前积累的梯度清0
-            loss = F.cross_entropy(outputs, labels)  # 交叉熵损失
+            loss = criterion(outputs, labels)
             loss.backward()  # 进行反向传播，根据计算得到的损失值，自动计算模型中各个可学习参数关于该损失的梯度
             optimizer.step()  # 根据计算出的梯度使用优化器来更新模型参数
             scheduler.step()
             if total_batch % 100 == 0:
                 true = labels.data.cpu()
-                predic = torch.max(outputs, 1)[1].cpu()  # 找到概率最大的类别作为预测类别
-                train_accuracy = metrics.accuracy_score(true, predic)
+                predic = outputs.data.cpu()
+                print("true", true)
+                print("predic", predic)  
+                train_accuracy = metrics.accuracy_score(true, predic, average='macro')
+                print("train_accuracy", train_accuracy)
+
                 dev_acc, dev_loss = evaluate(model, dev_data_loader)
                 if dev_loss < dev_best_loss:  # 选取损失最小作为模型保存的结果
                     dev_best_loss = dev_loss
@@ -110,6 +117,8 @@ def convert_numpy_int_to_python_int(lst):
 def evaluate(model, data_loader, test=False):
     config_inf = config.Config()
     model.eval()
+    criterion = nn.BCEWithLogitsLoss()
+
     loss_total = 0
     predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
@@ -127,9 +136,9 @@ def evaluate(model, data_loader, test=False):
             outputs = model(inputs)
             outputs_all = np.append(outputs_all, outputs.cpu().numpy(), axis = 0)
 
-            loss = F.cross_entropy(outputs, labels)
+            loss = criterion(outputs, labels)
             loss_total += loss
-            labels = labels.data.cpu().numpy()
+            labels = torch.max(labels.data, 1)[1].cpu().numpy()
             predic = torch.max(outputs.data, 1)[1].cpu().numpy()
             labels_all = np.append(labels_all, labels)
             predict_all = np.append(predict_all, predic)

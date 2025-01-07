@@ -5,10 +5,8 @@ from transformers import BertTokenizer
 class Config(object):
     """ 配置参数 """
     def __init__(self):
-        self.train_path = './dataset/train.txt'                                # 训练集
-        self.dev_path = './dataset/dev.txt'                                    # 验证集
-        self.test_path = './dataset/test.txt'                                  # 测试集
-        self.class_list = ['Negative', 'Positive']                             # 类别名单
+        self.data_path = './dataset/OCEMOTION.csv'
+        self.class_list = ['sadness', 'happiness', 'disgusts', 'anger', 'like', 'surprise', 'fear']     # 类别名单
         self.save_path = './saved/' + str(int(time.time())) + '.ckpt'          # 模型训练结果
         self.output_path = './saved/python_inference_result.jsonl'               # 推理训练数据的输出结果
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')   # 设备
