@@ -81,7 +81,7 @@ def train(model, train_data_loader, dev_data_loader):
                     improve = ''
                 time_dif = int(time.time() - start_time)
 
-                msg = 'Iter: {0:>6}, Train Loss: {1:>6.4}, Tranin accuracy: {2:>6.4}, Val Loss: {3:>6.4}, Val accuracy: {4:>6.4}, Time: {5} {6}'
+                msg = 'Iter: {0:>6}, Train Loss: {1:>6.4}, Train accuracy: {2:>6.4}, Val Loss: {3:>6.4}, Val accuracy: {4:>6.4}, Time: {5} {6}'
                 print(msg.format(total_batch, loss, train_accuracy, dev_loss, dev_accuracy, time_dif, improve))
 
                 model.train()  # 从评估模式转回训练模式
