@@ -11,16 +11,20 @@ PAD, CLS = '[PAD]', '[CLS]'  # padding符号, bert中综合信息符号
 
 class Dataset(Dataset):
     def __init__(self, contents, labels, transform=None):  # 加载所有文件到数组
+        self.config_inf = config.Config()
+
         self.contents = contents
-        le = LabelEncoder()
-        encoded_labels = le.fit_transform(labels)
-        self.labels = encoded_labels
+        # 构建标签到下标的映射
+        label_to_index = {label: idx for idx, label in enumerate(self.config_inf.class_list)}
+        # print('label_to_index', label_to_index)
+        # 转换 labels 字典中的键为下标
+        self.labels = [label_to_index[label] for label in labels]
         # for index in range(len(self.contents)):
         #     print(self.contents[index])
         #     print(self.labels[index])
         print("contentSize = ", len(self.contents))
         print("labelsSize = ", len(self.labels))
-        self.config_inf = config.Config()
+        
 
     def __len__(self):
         return len(self.contents)
@@ -51,9 +55,9 @@ def get_data_loader():  # return trainloader and testloader
     data = pd.read_csv(config_inf.data_path, sep='\t', header=None)
     contents = data[data.columns[1]].to_numpy()
     labels = data[data.columns[2]].to_numpy()
-    # 0.6 : 0.2 : 0.2
-    contents_train, contents_test, labels_train, labels_test = train_test_split(contents, labels, test_size = 0.4, stratify = labels, random_state = 42)
-    contents_test, contents_dev, labels_test, labels_dev = train_test_split(contents_test, labels_test, test_size = 0.5, stratify = labels_test, random_state = 42)
+    
+    contents_train, contents_test, labels_train, labels_test = train_test_split(contents, labels, test_size = 0.3, stratify = labels, random_state = 42)
+    contents_test, contents_dev, labels_test, labels_dev = train_test_split(contents_test, labels_test, test_size = 0.3, stratify = labels_test, random_state = 42)
 
     # for index in range(len(contents_train)):
     #     print(contents_train[index])
