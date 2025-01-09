@@ -45,7 +45,6 @@ class Dataset(Dataset):
         segment_ids = torch.LongTensor(encode_dict['token_type_ids']).to(self.config_inf.device)
         label = self.labels[idx]
         label_tensor = torch.tensor(label).to(self.config_inf.device)
-        label_tensor = torch.nn.functional.one_hot(label_tensor, num_classes = self.config_inf.num_classes).float()
         return (input_ids, segment_ids, attention_mask), label_tensor, self.contents[idx]
 
 
@@ -56,8 +55,8 @@ def get_data_loader():  # return trainloader and testloader
     contents = data[data.columns[1]].to_numpy()
     labels = data[data.columns[2]].to_numpy()
     
-    contents_train, contents_test, labels_train, labels_test = train_test_split(contents, labels, test_size = 0.3, stratify = labels, random_state = 42)
-    contents_test, contents_dev, labels_test, labels_dev = train_test_split(contents_test, labels_test, test_size = 0.3, stratify = labels_test, random_state = 42)
+    contents_train, contents_test, labels_train, labels_test = train_test_split(contents, labels, test_size = 0.15, stratify = labels, random_state = 42)
+    contents_test, contents_dev, labels_test, labels_dev = train_test_split(contents_test, labels_test, test_size = 0.4, stratify = labels_test, random_state = 42)
 
     # for index in range(len(contents_train)):
     #     print(contents_train[index])

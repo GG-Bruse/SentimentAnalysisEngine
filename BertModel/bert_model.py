@@ -16,5 +16,5 @@ class Model(nn.Module):
         segment_ids = input[1]
         attention_mask = input[2]
         all_output = self.bert_model(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=segment_ids)
-        output = self.fc(all_output[1])
-        return torch.sigmoid(output)
+        logits = self.fc(all_output[1])
+        return logits

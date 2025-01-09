@@ -2,22 +2,10 @@ import numpy as np
 import config
 import torch
 import torch.nn as nn
-import torchmetrics
+import torch.nn.functional as F
+from sklearn import metrics
+# import torchmetrics
 import json
-
-
-
-def calculation_accuracy(config_inf, true, predic):
-    true = torch.argmax(true, dim=1)
-    accuracy = torchmetrics.classification.MulticlassAccuracy(num_classes=config_inf.num_classes)
-    accuracy.update(predic, true)
-    return accuracy.compute()
-
-def calculation_f1(config_inf, true, predic):
-    true = torch.argmax(true, dim=1)
-    f1_score = torchmetrics.classification.MulticlassF1Score(num_classes=config_inf.num_classes)
-    f1_score.update(predic, true)
-    return f1_score.compute()
 
 
 
@@ -29,7 +17,6 @@ def convert_numpy_int_to_python_int(lst):
 def evaluate(model, data_loader, test=False):
     config_inf = config.Config()
     model.eval()
-    criterion = nn.BCELoss()
 
     loss_total = 0
     predict_all = np.array([], dtype=int)
@@ -39,9 +26,7 @@ def evaluate(model, data_loader, test=False):
     attention_mask_all = np.array([[]], dtype=int).reshape(0, config_inf.max_sequence_length)
     segment_ids_all = np.array([[]], dtype=int).reshape(0, config_inf.max_sequence_length)
     outputs_all = np.array([[]], dtype=np.float64).reshape(0, config_inf.num_classes)
-
-    outputs_all_tensor = torch.empty(0, dtype=torch.float32).to(config_inf.device)
-    labels_all_tensor = torch.empty(0, dtype=torch.float32).to(config_inf.device)
+    softmax = nn.Softmax(dim=1)
 
     with torch.no_grad():
         for inputs, labels, texts in data_loader:
@@ -49,23 +34,20 @@ def evaluate(model, data_loader, test=False):
             input_ids_all = np.append(input_ids_all, inputs[0].cpu().numpy(), axis = 0)
             segment_ids_all = np.append(segment_ids_all, inputs[1].cpu().numpy(), axis = 0)
             attention_mask_all = np.append(attention_mask_all, inputs[2].cpu().numpy(), axis = 0)
-            outputs = model(inputs)
+
+            logits = model(inputs)
+            outputs = softmax(logits)
+
             outputs_all = np.append(outputs_all, outputs.cpu().numpy(), axis = 0)
             
-            outputs_all_tensor = torch.cat((outputs_all_tensor, outputs), dim=0)
-            labels_all_tensor = torch.cat((labels_all_tensor, labels), dim=0)
-
-            loss = criterion(outputs, labels)
+            loss = F.cross_entropy(logits, labels)  # 交叉熵损失
             loss_total += loss
 
-            labels = torch.max(labels.data, 1)[1].cpu().numpy()
+            labels = labels.data.cpu()
             predic = torch.max(outputs.data, 1)[1].cpu().numpy()
             labels_all = np.append(labels_all, labels)
             predict_all = np.append(predict_all, predic)
-
-        true = labels_all_tensor.data.cpu()
-        predic = outputs_all_tensor.data.cpu()
-        accuracy = calculation_accuracy(config_inf, true, predic)
+        accuracy = metrics.accuracy_score(labels_all, predict_all)
 
     if test:
         # print("input_ids_all:", input_ids_all.shape)
@@ -94,8 +76,10 @@ def evaluate(model, data_loader, test=False):
                 json.dump(data, file, ensure_ascii=False)
                 file.write('\n')
                 index += 1
-        f1 = calculation_f1(config_inf, true, predic)
-        
-        return (loss_total / len(data_loader)).cpu(), accuracy, f1
-    return loss_total / len(data_loader), accuracy
+            
+        report = metrics.classification_report(labels_all, predict_all, target_names=config_inf.class_list, digits=4)
+        # 生成混淆矩阵
+        confusion = metrics.confusion_matrix(labels_all, predict_all)
+        return accuracy, loss_total / len(data_loader), report, confusion
+    return accuracy, loss_total / len(data_loader)
 
