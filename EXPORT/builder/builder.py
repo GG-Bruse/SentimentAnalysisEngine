@@ -246,9 +246,9 @@ def squad_output(prefix, config, init_dict, network, input_tensor):
     dense = network.add_fully_connected(tanh_output, n_values, W_out, B_out)
     dense_data = dense.get_output(0)
 
-    sigmoid = network.add_activation(dense_data, trt.tensorrt.ActivationType.SIGMOID)
-    set_output_name(sigmoid, prefix, 'sigmoid')
-    return sigmoid 
+    softmax = network.add_softmax(dense_data)
+    set_output_name(softmax, prefix, 'softmax')
+    return softmax 
 
 
 

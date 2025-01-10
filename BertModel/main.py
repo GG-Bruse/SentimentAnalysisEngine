@@ -31,4 +31,4 @@ if __name__ == '__main__':
     bert_model = Model(config_inf.bert_path, config_inf.hidden_size, config_inf.num_classes).to(config_inf.device)
     # bert_model.load_state_dict(torch.load('/data/project/bjy/SentimentAnalysisEngine/BertModel/saved/1736395113.ckpt', weights_only=True))
     train(bert_model, train_data_loader, dev_data_loader)
-    # test(bert_model, test_data_loader, "./saved/1736413398.ckpt")
+    # test(bert_model, test_data_loader, "./saved/1736418888.ckpt")

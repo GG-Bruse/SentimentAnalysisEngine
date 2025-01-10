@@ -120,8 +120,9 @@ def main(args):
             if infer_count == int(args.inference_count):
                 break
 
-            line = line.strip()
-            content, label = line.split('\t')
+            line = json.loads(line.strip())
+            content = line["text"]
+            label = line["target"]
             texts_all = np.append(texts_all, content)
             labels_all = np.append(labels_all, label)
 

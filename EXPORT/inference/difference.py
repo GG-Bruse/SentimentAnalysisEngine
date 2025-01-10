@@ -40,7 +40,7 @@ def main(args):
         python = []
         engine = []
         total = 0
-        for index in range(len(python_inference_list)):
+        for index in range(len(engine_inference_list)):
             py_row = []
             en_row = []
             for i in range(output_numbers):
