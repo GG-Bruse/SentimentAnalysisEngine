@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
 
 import config
@@ -10,18 +10,19 @@ import config
 PAD, CLS = '[PAD]', '[CLS]'  # padding符号, bert中综合信息符号
 
 class Dataset(Dataset):
-    def __init__(self, contents, labels, transform=None):  # 加载所有文件到数组
+    def __init__(self, file_path, transform=None):  # 加载所有文件到数组
         self.config_inf = config.Config()
-
-        self.contents = contents
-        # 构建标签到下标的映射
-        label_to_index = {label: idx for idx, label in enumerate(self.config_inf.class_list)}
-        # print('label_to_index', label_to_index)
-        # 转换 labels 字典中的键为下标
-        self.labels = [label_to_index[label] for label in labels]
-        # for index in range(len(self.contents)):
-        #     print(self.contents[index])
-        #     print(self.labels[index])
+        self.contents = []
+        self.labels = []
+        with open(file_path, 'r', encoding='UTF-8') as file:
+            for line in tqdm(file):
+                lin = line.strip()
+                if not lin:
+                    continue
+                content, label = lin.split('\t')  # 切分语句和标签
+                self.contents.append(content)
+                self.labels.append(label)
+        print(file_path)
         print("contentSize = ", len(self.contents))
         print("labelsSize = ", len(self.labels))
         
@@ -44,27 +45,15 @@ class Dataset(Dataset):
         attention_mask = torch.LongTensor(encode_dict['attention_mask']).to(self.config_inf.device)
         segment_ids = torch.LongTensor(encode_dict['token_type_ids']).to(self.config_inf.device)
         label = self.labels[idx]
-        label_tensor = torch.tensor(label).to(self.config_inf.device)
+        label_tensor = torch.tensor(int(label)).to(self.config_inf.device)
         return (input_ids, segment_ids, attention_mask), label_tensor, self.contents[idx]
 
 
 def get_data_loader():  # return trainloader and testloader
     config_inf = config.Config()
-    
-    data = pd.read_csv(config_inf.data_path, sep='\t', header=None)
-    contents = data[data.columns[1]].to_numpy()
-    labels = data[data.columns[2]].to_numpy()
-    
-    contents_train, contents_test, labels_train, labels_test = train_test_split(contents, labels, test_size = 0.15, stratify = labels, random_state = 42)
-    contents_test, contents_dev, labels_test, labels_dev = train_test_split(contents_test, labels_test, test_size = 0.4, stratify = labels_test, random_state = 42)
-
-    # for index in range(len(contents_train)):
-    #     print(contents_train[index])
-    #     print(labels_train[index])
-
-    data_train = Dataset(contents_train, labels_train)
-    data_test = Dataset(contents_test, labels_test)
-    data_dev = Dataset(contents_dev, labels_dev)
+    data_train = Dataset(config_inf.train_path)
+    data_test = Dataset(config_inf.test_path)
+    data_dev = Dataset(config_inf.dev_path)
 
     train_loader = DataLoader(data_train, batch_size=config_inf.batch_size, shuffle=True)  # , collate_fn=collate
     test_loader = DataLoader(data_test, batch_size=config_inf.batch_size) 
